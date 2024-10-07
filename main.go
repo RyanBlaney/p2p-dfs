@@ -1,38 +1,53 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
 	"log"
+	"strings"
+	"time"
 
 	"github.com/RyanBlaney/go-p2p-dfs/p2p"
 )
 
-func OnPeer(peer p2p.Peer) error {
-	peer.Close()
+func makeServer(listenAddr string, nodes ...string) *FileServer {
+	tcpTransportOpts := p2p.TCPTransportOpts{
+		ListenAddr:    listenAddr,
+		HandshakeFunc: p2p.NOPHandshakeFunc,
+		Decoder:       p2p.DefaultDecoder{},
+	}
+	tcpTransport := p2p.NewTCPTransport(tcpTransportOpts)
 
-	fmt.Println("doing some logic with the peer outside of TCPTransport")
-	return nil
+	fileServerOpts := FileServerOpts{
+		StorageRoot:       strings.Split(listenAddr, ":")[1] + "_network",
+		PathTransformFunc: CASPathTransformFunc,
+		Transport:         tcpTransport,
+		BootstrapNodes:    nodes,
+	}
+
+	s := NewFileServer(fileServerOpts)
+
+	tcpTransport.OnPeer = s.OnPeer
+
+	return s
 }
 
 func main() {
-	tcpOpts := p2p.TCPTransportOpts{
-		ListenAddr:    ":3000",
-		HandshakeFunc: p2p.NOPHandshakeFunc,
-		Decoder:       p2p.DefaultDecoder{},
-		OnPeer:        OnPeer,
-	}
-	tr := p2p.NewTCPTransport(tcpOpts)
+	s1 := makeServer(":6600", "")
+	s2 := makeServer(":5000", ":6600")
 
 	go func() {
-		for {
-			msg := <-tr.Consume()
-			fmt.Printf("%v\n", msg)
-		}
+		log.Fatal(s1.Start())
 	}()
 
-	if err := tr.ListenAndAccept(); err != nil {
-		log.Fatal(err)
-	}
+	time.Sleep(1 * time.Second)
+
+	go s2.Start()
+
+	time.Sleep(1 * time.Second)
+
+	data := bytes.NewReader([]byte("my big data file here"))
+
+	s2.StoreData("myprivatedata", data)
 
 	select {}
 }
