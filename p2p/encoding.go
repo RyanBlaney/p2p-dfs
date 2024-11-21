@@ -38,7 +38,5 @@ func (dec DefaultDecoder) Decode(r io.Reader, rpc *RPC) error {
 
 	rpc.Payload = buf[:n]
 
-	// fmt.Println(buf[:n])
-
 	return nil
 }
