@@ -134,7 +134,7 @@ func (t *TCPTransport) handleConn(conn net.Conn, outbound bool) {
 
 	if t.OnPeer != nil {
 		if err = t.OnPeer(peer); err != nil {
-			log.Println("OnPeer is nil on address: %s", conn.RemoteAddr().String())
+			log.Printf("OnPeer is nil on address: %s\n", conn.RemoteAddr().String())
 			return
 		}
 	}
