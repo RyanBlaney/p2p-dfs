@@ -105,8 +105,6 @@ func (s *Store) Write(key string, r io.Reader) (int64, error) {
 	return s.writeStream(key, r)
 }
 
-// FIXME: Instead of copying directly to a reader we first copy this into
-// a buffer. Maybe just return the File from the readStream?
 func (s *Store) Read(key string) (int64, io.Reader, error) {
 	return s.readStream(key)
 }
